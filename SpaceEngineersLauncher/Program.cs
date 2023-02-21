@@ -13,6 +13,7 @@ using System.Windows.Forms;
 using VRage.Plugins;
 using System.Linq;
 using System.Diagnostics;
+using System.Threading;
 
 namespace avaness.SpaceEngineersLauncher
 {
@@ -26,14 +27,19 @@ namespace avaness.SpaceEngineersLauncher
 		private const string PluginLoaderFile = "PluginLoader.dll";
 		private const string AssemblyConfigFile = "SpaceEngineersLauncher.exe.config";
 		private const string OriginalAssemblyConfig = "SpaceEngineers.exe.config";
+		private const string ProgramGuid = "03f85883-4990-4d47-968e-5e4fc5d72437";
 
 		private static SplashScreen splash;
+		private static Mutex mutex; // For ensuring only a single instance of SE
 
 		static void Main(string[] args)
 		{
 			bool isReport = IsReport(args);
 			if (!isReport)
 			{
+				if (!IsSingleInstance())
+					return;
+
 				splash = new SplashScreen("avaness.SpaceEngineersLauncher");
 
 				try
@@ -143,7 +149,22 @@ namespace avaness.SpaceEngineersLauncher
 				Close();
 		}
 
-		private static void EnsureAssemblyConfigFile()
+        private static bool IsSingleInstance()
+        {
+			// Check for other SpaceEngineersLauncher.exe
+			mutex = new Mutex(true, ProgramGuid, out bool createdNew);
+			if (!createdNew)
+				return false;
+
+			// Check for other SpaceEngineers.exe
+			string sePath = Path.GetFullPath(typeof(MyProgram).Assembly.Location);
+			if (Process.GetProcessesByName("SpaceEngineers").Any(x => x.MainModule.FileName.Equals(sePath, StringComparison.OrdinalIgnoreCase)))
+				return true;
+
+			return true;
+        }
+
+        private static void EnsureAssemblyConfigFile()
         {
 			// Without this file, SE will have many bugs because its dependencies will not be correct.
             if (!File.Exists(AssemblyConfigFile) && File.Exists(OriginalAssemblyConfig))
