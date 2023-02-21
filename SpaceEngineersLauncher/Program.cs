@@ -41,7 +41,10 @@ namespace avaness.SpaceEngineersLauncher
 			}
 
 			if (!IsSingleInstance())
+            {
+				Show("Error: Space Engineers is already running!");
 				return;
+			}
 
 			if (!IsSupportedGameVersion())
 			{
