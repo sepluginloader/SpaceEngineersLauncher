@@ -28,6 +28,7 @@ namespace avaness.SpaceEngineersLauncher
 		private const string AssemblyConfigFile = "SpaceEngineersLauncher.exe.config";
 		private const string OriginalAssemblyConfig = "SpaceEngineers.exe.config";
 		private const string ProgramGuid = "03f85883-4990-4d47-968e-5e4fc5d72437";
+		private static readonly Version SupportedGameVersion = new Version(1, 202, 0);
 
 		private static SplashScreen splash;
 		private static Mutex mutex; // For ensuring only a single instance of SE
@@ -39,6 +40,12 @@ namespace avaness.SpaceEngineersLauncher
 			{
 				if (!IsSingleInstance())
 					return;
+
+                if (IsSupportedGameVersion())
+                {
+					MessageBox.Show("Game version not supported! Requires " + SupportedGameVersion.ToString(3) + " or later");
+					return;
+				}
 
 				splash = new SplashScreen("avaness.SpaceEngineersLauncher");
 
@@ -148,6 +155,17 @@ namespace avaness.SpaceEngineersLauncher
 			if(!isReport)
 				Close();
 		}
+
+        private static bool IsSupportedGameVersion()
+		{
+			SpaceEngineers.Game.SpaceEngineersGame.SetupBasicGameInfo();
+			int? gameVersionInt = Sandbox.Game.MyPerGameSettings.BasicGameInfo.GameVersion;
+			if (!gameVersionInt.HasValue)
+				return true;
+			string gameVersionStr = VRage.Utils.MyBuildNumbers.ConvertBuildNumberFromIntToStringFriendly(gameVersionInt.Value, ".");
+			Version gameVersion = new Version(gameVersionStr);
+			return gameVersion >= SupportedGameVersion;
+        }
 
         private static bool IsSingleInstance()
         {

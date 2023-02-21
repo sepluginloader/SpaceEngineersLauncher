@@ -63,6 +63,10 @@
     <Reference Include="SpaceEngineers">
       <HintPath>..\Bin64\SpaceEngineers.exe</HintPath>
     </Reference>
+    <Reference Include="SpaceEngineers.Game, Version=1.0.0.0, Culture=neutral, processorArchitecture=AMD64">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Bin64\SpaceEngineers.Game.dll</HintPath>
+    </Reference>
     <Reference Include="Steamworks.NET, Version=20.1.0.0, Culture=neutral, processorArchitecture=AMD64">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\Bin64\Steamworks.NET.dll</HintPath>
