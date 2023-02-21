@@ -45,7 +45,7 @@ namespace avaness.SpaceEngineersLauncher
 
 			if (!IsSupportedGameVersion())
 			{
-				MessageBox.Show("Game version not supported! Requires " + SupportedGameVersion.ToString(3) + " or later");
+				Show("Game version not supported! Requires " + SupportedGameVersion.ToString(3) + " or later");
 				return;
 			}
 
@@ -84,7 +84,7 @@ namespace avaness.SpaceEngineersLauncher
 				if (!Steamworks.SteamAPI.IsSteamRunning())
 				{
 					LogFile.WriteLine("Steam not detected!");
-					MessageBox.Show("Steam must be running before you can start Space Engineers.");
+					Show("Steam must be running before you can start Space Engineers.");
 					splash.Delete();
 					Environment.Exit(0);
 				}
@@ -143,17 +143,10 @@ namespace avaness.SpaceEngineersLauncher
 			}
 			catch (Exception e)
 			{
+				LogFile.WriteLine("Error while getting Plugin Loader ready: " + e);
+				Show("Plugin Loader crashed: " + e);
 				if (Application.OpenForms.Count > 0)
-				{
-					Form form = Application.OpenForms[0];
-					MessageBox.Show(form, "Plugin Loader crashed: " + e);
-					form.Close();
-				}
-				else
-				{
-					LogFile.WriteLine("Error while getting Plugin Loader ready: " + e);
-					MessageBox.Show("Plugin Loader crashed: " + e);
-				}
+                    Application.OpenForms[0].Close();
 			}
 
 			MyCommonProgramStartup.BeforeSplashScreenInit += Close;
@@ -251,12 +244,12 @@ namespace avaness.SpaceEngineersLauncher
 					prompt.Append("Would you like to update now?");
 				}
 
-				DialogResult result = MessageBox.Show(splash, prompt.ToString(), "Space Engineers Launcher", MessageBoxButtons.YesNoCancel);
+				DialogResult result = Show(prompt.ToString(), MessageBoxButtons.YesNoCancel);
 				if (result == DialogResult.Yes)
 				{
 					splash.SetText("Downloading update...");
 					if (!TryDownloadUpdate(config, latestVersion))
-						MessageBox.Show("Update failed!");
+						Show("Update failed!");
 				}
 				else if (result == DialogResult.Cancel)
 				{
@@ -361,5 +354,12 @@ namespace avaness.SpaceEngineersLauncher
 
 			return true;
         }
+
+		static DialogResult Show(string msg, MessageBoxButtons buttons = MessageBoxButtons.OK)
+        {
+			if (Application.OpenForms.Count > 0)
+                return MessageBox.Show(Application.OpenForms[0], msg, "Space Engineers Launcher", buttons);
+			return MessageBox.Show(msg, "Space Engineers Launcher", buttons);
+		}
     }
 }
