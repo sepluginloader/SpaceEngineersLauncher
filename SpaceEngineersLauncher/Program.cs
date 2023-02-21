@@ -1,6 +1,5 @@
 ﻿using Sandbox;
 using SpaceEngineers;
-using Steamworks;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -35,125 +34,135 @@ namespace avaness.SpaceEngineersLauncher
 
 		static void Main(string[] args)
 		{
-			bool isReport = IsReport(args);
-			if (!isReport)
+			if (IsReport(args))
+            {
+				StartSpaceEngineers(args);
+				return;
+			}
+
+			if (!IsSingleInstance())
+				return;
+
+			if (!IsSupportedGameVersion())
 			{
-				if (!IsSingleInstance())
-					return;
+				MessageBox.Show("Game version not supported! Requires " + SupportedGameVersion.ToString(3) + " or later");
+				return;
+			}
 
-                if (IsSupportedGameVersion())
-                {
-					MessageBox.Show("Game version not supported! Requires " + SupportedGameVersion.ToString(3) + " or later");
-					return;
-				}
+			StartPluginLoader(args);
+			StartSpaceEngineers(args);
+			Close();
+		}
 
-				splash = new SplashScreen("avaness.SpaceEngineersLauncher");
+		private static void StartPluginLoader(string[] args)
+        {
+			splash = new SplashScreen("avaness.SpaceEngineersLauncher");
 
+			try
+			{
+				LogFile.Init(Path.Combine("Plugins", "launcher.log"));
+				LogFile.WriteLine("Starting - v" + Assembly.GetExecutingAssembly().GetName().Version.ToString(3));
+
+				ConfigFile config = ConfigFile.Load(Path.Combine("Plugins", "launcher.xml"));
+
+				// Fix tls 1.2 not supported on Windows 7 - github.com is tls 1.2 only
 				try
 				{
-					LogFile.Init(Path.Combine("Plugins", "launcher.log"));
-					LogFile.WriteLine("Starting - v" + Assembly.GetExecutingAssembly().GetName().Version.ToString(3));
+					ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+				}
+				catch (NotSupportedException e)
+				{
+					LogFile.WriteLine("An error occurred while setting up networking, web requests will probably fail: " + e);
+				}
 
-					ConfigFile config = ConfigFile.Load(Path.Combine("Plugins", "launcher.xml"));
+				if (!File.Exists(AppIdFile))
+				{
+					LogFile.WriteLine(AppIdFile + " does not exist, creating.");
+					File.WriteAllText(AppIdFile, AppId.ToString());
+				}
 
-					// Fix tls 1.2 not supported on Windows 7 - github.com is tls 1.2 only
-					try
+				if (!Steamworks.SteamAPI.IsSteamRunning())
+				{
+					LogFile.WriteLine("Steam not detected!");
+					MessageBox.Show("Steam must be running before you can start Space Engineers.");
+					splash.Delete();
+					Environment.Exit(0);
+				}
+
+				EnsureAssemblyConfigFile();
+
+				if (!config.NoUpdates)
+					Update(config);
+
+				StringBuilder pluginLog = new StringBuilder("Loading plugins: ");
+				List<string> plugins = new List<string>();
+
+				if (CanUseLoader(config))
+				{
+					pluginLog.Append(PluginLoaderFile).Append(',');
+					plugins.Add(PluginLoaderFile);
+				}
+				else
+				{
+					LogFile.WriteLine("WARNING: Plugin Loader does not exist.");
+				}
+
+				if (args != null && args.Length > 1)
+				{
+					int pluginFlag = Array.IndexOf(args, "-plugin");
+					if (pluginFlag >= 0)
 					{
-						ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
-					}
-					catch (NotSupportedException e)
-					{
-						LogFile.WriteLine("An error occurred while setting up networking, web requests will probably fail: " + e);
-					}
-
-					if (!File.Exists(AppIdFile))
-					{
-						LogFile.WriteLine(AppIdFile + " does not exist, creating.");
-						File.WriteAllText(AppIdFile, AppId.ToString());
-					}
-
-					if (!SteamAPI.IsSteamRunning())
-					{
-						LogFile.WriteLine("Steam not detected!");
-						MessageBox.Show("Steam must be running before you can start Space Engineers.");
-						splash.Delete();
-						Environment.Exit(0);
-					}
-
-					EnsureAssemblyConfigFile();
-
-					if (!config.NoUpdates)
-						Update(config);
-
-					StringBuilder pluginLog = new StringBuilder("Loading plugins: ");
-					List<string> plugins = new List<string>();
-
-					if (CanUseLoader(config))
-					{
-						pluginLog.Append(PluginLoaderFile).Append(',');
-						plugins.Add(PluginLoaderFile);
-					}
-					else
-					{
-						LogFile.WriteLine("WARNING: Plugin Loader does not exist.");
-					}
-
-					if (args != null && args.Length > 1)
-					{
-						int pluginFlag = Array.IndexOf(args, "-plugin");
-						if (pluginFlag >= 0)
+						args[pluginFlag] = "";
+						for (int i = pluginFlag + 1; i < args.Length && !args[i].StartsWith("-"); i++)
 						{
-							args[pluginFlag] = "";
-							for (int i = pluginFlag + 1; i < args.Length && !args[i].StartsWith("-"); i++)
+							if (File.Exists(args[i]))
 							{
-								if (File.Exists(args[i]))
-								{
-									pluginLog.Append(args[i]).Append(',');
-									plugins.Add(args[i]);
-								}
-								else
-								{
-									LogFile.WriteLine("WARNING: '" + args[i] + "' does not exist.");
-								}
+								pluginLog.Append(args[i]).Append(',');
+								plugins.Add(args[i]);
+							}
+							else
+							{
+								LogFile.WriteLine("WARNING: '" + args[i] + "' does not exist.");
 							}
 						}
 					}
-
-					splash.SetText("Registering plugins...");
-
-					if (plugins.Count > 0)
-					{
-						if (pluginLog.Length > 0)
-							pluginLog.Length--;
-						LogFile.WriteLine(pluginLog.ToString());
-
-						MyPlugins.RegisterUserAssemblyFiles(plugins);
-					}
-
-					splash.SetText("Starting game...");
 				}
-				catch (Exception e)
+
+				splash.SetText("Registering plugins...");
+
+				if (plugins.Count > 0)
 				{
-					if (Application.OpenForms.Count > 0)
-					{
-						Form form = Application.OpenForms[0];
-						MessageBox.Show(form, "Plugin Loader crashed: " + e);
-						form.Close();
-					}
-					else
-					{
-						LogFile.WriteLine("Error while getting Plugin Loader ready: " + e);
-						MessageBox.Show("Plugin Loader crashed: " + e);
-					}
+					if (pluginLog.Length > 0)
+						pluginLog.Length--;
+					LogFile.WriteLine(pluginLog.ToString());
+
+					MyPlugins.RegisterUserAssemblyFiles(plugins);
 				}
 
-				MyCommonProgramStartup.BeforeSplashScreenInit += Close;
+				splash.SetText("Starting game...");
+			}
+			catch (Exception e)
+			{
+				if (Application.OpenForms.Count > 0)
+				{
+					Form form = Application.OpenForms[0];
+					MessageBox.Show(form, "Plugin Loader crashed: " + e);
+					form.Close();
+				}
+				else
+				{
+					LogFile.WriteLine("Error while getting Plugin Loader ready: " + e);
+					MessageBox.Show("Plugin Loader crashed: " + e);
+				}
 			}
 
-			MyProgram.Main(args);
+			MyCommonProgramStartup.BeforeSplashScreenInit += Close;
+		}
 
-			if(!isReport)
-				Close();
+		[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+		private static void StartSpaceEngineers(string[] args)
+		{
+			MyProgram.Main(args);
 		}
 
         private static bool IsSupportedGameVersion()
@@ -175,9 +184,9 @@ namespace avaness.SpaceEngineersLauncher
 				return false;
 
 			// Check for other SpaceEngineers.exe
-			string sePath = Path.GetFullPath(typeof(MyProgram).Assembly.Location);
+			string sePath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "SpaceEngineers.exe");
 			if (Process.GetProcessesByName("SpaceEngineers").Any(x => x.MainModule.FileName.Equals(sePath, StringComparison.OrdinalIgnoreCase)))
-				return true;
+				return false;
 
 			return true;
         }
