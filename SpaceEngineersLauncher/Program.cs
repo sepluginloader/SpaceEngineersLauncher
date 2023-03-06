@@ -64,7 +64,6 @@ namespace avaness.SpaceEngineersLauncher
             {
 				if (mutexActive)
 					mutex.ReleaseMutex();
-				MessageBox.Show("Closed!");
 			}
 		}
 
