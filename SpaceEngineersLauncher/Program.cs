@@ -28,9 +28,11 @@ namespace avaness.SpaceEngineersLauncher
 		private const string OriginalAssemblyConfig = "SpaceEngineers.exe.config";
 		private const string ProgramGuid = "03f85883-4990-4d47-968e-5e4fc5d72437";
 		private static readonly Version SupportedGameVersion = new Version(1, 202, 0);
+		private const int MutexTimeout = 1000;
 
 		private static SplashScreen splash;
 		private static Mutex mutex; // For ensuring only a single instance of SE
+		private static bool mutexActive;
 
 		static void Main(string[] args)
 		{
@@ -41,7 +43,7 @@ namespace avaness.SpaceEngineersLauncher
 			}
 
 			if (!IsSingleInstance())
-            {
+			{
 				Show("Error: Space Engineers is already running!");
 				return;
 			}
@@ -52,9 +54,18 @@ namespace avaness.SpaceEngineersLauncher
 				return;
 			}
 
-			StartPluginLoader(args);
-			StartSpaceEngineers(args);
-			Close();
+			try
+			{
+				StartPluginLoader(args);
+				StartSpaceEngineers(args);
+				Close();
+			}
+			finally
+            {
+				if (mutexActive)
+					mutex.ReleaseMutex();
+				MessageBox.Show("Closed!");
+			}
 		}
 
 		private static void StartPluginLoader(string[] args)
@@ -175,9 +186,18 @@ namespace avaness.SpaceEngineersLauncher
         private static bool IsSingleInstance()
         {
 			// Check for other SpaceEngineersLauncher.exe
-			mutex = new Mutex(true, ProgramGuid, out bool createdNew);
-			if (!createdNew)
-				return false;
+			mutex = new Mutex(true, ProgramGuid, out mutexActive);
+			if (!mutexActive)
+            {
+				try
+				{
+					mutexActive = mutex.WaitOne(MutexTimeout);
+					if(!mutexActive)
+						return false;
+				}
+				catch (AbandonedMutexException)
+				{ } // Abandoned probably means that the process was killed or crashed
+			}
 
 			// Check for other SpaceEngineers.exe
 			string sePath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "SpaceEngineers.exe");
