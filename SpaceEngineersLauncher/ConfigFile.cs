@@ -33,6 +33,10 @@ namespace avaness.SpaceEngineersLauncher
                     networkTimeout = value;
             }
         }
+
+        public bool AllowIPv6 { get; set; } = true;
+
+
         public ConfigFile()
         {
 

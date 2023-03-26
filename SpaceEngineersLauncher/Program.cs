@@ -248,7 +248,7 @@ namespace avaness.SpaceEngineersLauncher
 				LogFile.WriteLine("Plugin Loader version unknown");
 			}
 
-			if (!IsLatestVersion(config.NetworkTimeout, currentVersion, out string latestVersion))
+			if (!IsLatestVersion(config, currentVersion, out string latestVersion))
 			{
 				LogFile.WriteLine("An update is available to " + latestVersion);
 
@@ -281,15 +281,12 @@ namespace avaness.SpaceEngineersLauncher
 			}
 		}
 
-		static bool IsLatestVersion(int networkTimeout, string currentVersion, out string latestVersion)
+		static bool IsLatestVersion(ConfigFile config, string currentVersion, out string latestVersion)
         {
 			try
 			{
 				Uri uri = new Uri(RepoUrl + "releases/latest", UriKind.Absolute);
-				LogFile.WriteLine("Downloading " + uri);
-				HttpWebRequest request = WebRequest.CreateHttp(uri);
-				request.Timeout = networkTimeout;
-				HttpWebResponse response = request.GetResponse() as HttpWebResponse;
+				HttpWebResponse response = Download(config, uri);
 				if (response?.ResponseUri != null)
 				{
 					string version = response.ResponseUri.OriginalString;
@@ -319,12 +316,7 @@ namespace avaness.SpaceEngineersLauncher
 				LogFile.WriteLine("Updating to Plugin Loader " + version);
 
 				Uri uri = new Uri(RepoUrl + string.Format(RepoDownloadSuffix, version), UriKind.Absolute);
-				LogFile.WriteLine("Downloading " + uri);
-				HttpWebRequest request = WebRequest.CreateHttp(uri);
-				request.Timeout = config.NetworkTimeout;
-				request.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
-
-				HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+				HttpWebResponse response = Download(config, uri);
 				using (Stream zipFileStream = response.GetResponseStream())
 				using (ZipArchive zipFile = new ZipArchive(zipFileStream))
 				{
@@ -352,6 +344,25 @@ namespace avaness.SpaceEngineersLauncher
 				LogFile.WriteLine("An error occurred while updating: " + e);
 			}
 			return false;
+		}
+
+		static HttpWebResponse Download(ConfigFile config, Uri uri)
+		{
+			LogFile.WriteLine("Downloading " + uri);
+			HttpWebRequest request = WebRequest.CreateHttp(uri);
+			request.Timeout = config.NetworkTimeout;
+			request.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+			if (!config.AllowIPv6)
+				request.ServicePoint.BindIPEndPointDelegate = BlockIPv6;
+			return request.GetResponse() as HttpWebResponse;
+		}
+
+		private static IPEndPoint BlockIPv6(ServicePoint servicePoint, IPEndPoint remoteEndPoint, int retryCount)
+		{
+			if (remoteEndPoint.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+				return new IPEndPoint(IPAddress.Any, 0);
+
+			throw new InvalidOperationException("No IPv4 address");
 		}
 
 		static bool CanUseLoader(ConfigFile config)
