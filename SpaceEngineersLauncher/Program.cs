@@ -240,8 +240,8 @@ namespace avaness.SpaceEngineersLauncher
 			string currentVersion = null;
 			if (!string.IsNullOrWhiteSpace(config.LoaderVersion) && CanUseLoader(config) && VersionRegex.IsMatch(config.LoaderVersion))
 			{
-				LogFile.WriteLine("Plugin Loader " + currentVersion);
 				currentVersion = config.LoaderVersion;
+				LogFile.WriteLine("Plugin Loader " + currentVersion);
 			}
 			else
 			{
