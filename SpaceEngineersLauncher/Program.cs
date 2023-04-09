@@ -13,23 +13,23 @@ using VRage.Plugins;
 using System.Linq;
 using System.Diagnostics;
 using System.Threading;
+using System.Security.Cryptography;
 
 namespace avaness.SpaceEngineersLauncher
 {
     static class Program
     {
 		private const uint AppId = 244850u;
-		private const string AppIdFile = "steam_appid.txt";
 		private const string RepoUrl = "https://github.com/sepluginloader/PluginLoader/";
 		private const string RepoDownloadSuffix = "releases/download/{0}/PluginLoader-{0}.zip";
 		private static readonly Regex VersionRegex = new Regex(@"^v(\d+\.)*\d+$");
 		private const string PluginLoaderFile = "PluginLoader.dll";
-		private const string AssemblyConfigFile = "SpaceEngineersLauncher.exe.config";
-		private const string OriginalAssemblyConfig = "SpaceEngineers.exe.config";
+		private const string OriginalAssemblyFile = "SpaceEngineers.exe";
 		private const string ProgramGuid = "03f85883-4990-4d47-968e-5e4fc5d72437";
 		private static readonly Version SupportedGameVersion = new Version(1, 202, 0);
 		private const int MutexTimeout = 1000;
 
+		private static string exeLocation;
 		private static SplashScreen splash;
 		private static Mutex mutex; // For ensuring only a single instance of SE
 		private static bool mutexActive;
@@ -41,6 +41,8 @@ namespace avaness.SpaceEngineersLauncher
 				StartSpaceEngineers(args);
 				return;
 			}
+
+			exeLocation = Path.GetDirectoryName(Path.GetFullPath(Assembly.GetExecutingAssembly().Location));
 
 			if (!IsSingleInstance())
 			{
@@ -73,10 +75,14 @@ namespace avaness.SpaceEngineersLauncher
 
 			try
 			{
-				LogFile.Init(Path.Combine("Plugins", "launcher.log"));
+				string pluginsDir = Path.Combine(exeLocation, "Plugins");
+				if(!Directory.Exists(pluginsDir))
+					Directory.CreateDirectory(pluginsDir);
+
+				LogFile.Init(Path.Combine(pluginsDir, "launcher.log"));
 				LogFile.WriteLine("Starting - v" + Assembly.GetExecutingAssembly().GetName().Version.ToString(3));
 
-				ConfigFile config = ConfigFile.Load(Path.Combine("Plugins", "launcher.xml"));
+				ConfigFile config = ConfigFile.Load(Path.Combine(pluginsDir, "launcher.xml"));
 
 				// Fix tls 1.2 not supported on Windows 7 - github.com is tls 1.2 only
 				try
@@ -88,10 +94,11 @@ namespace avaness.SpaceEngineersLauncher
 					LogFile.WriteLine("An error occurred while setting up networking, web requests will probably fail: " + e);
 				}
 
-				if (!File.Exists(AppIdFile))
+				string appIdFile = Path.Combine(exeLocation, "steam_appid.txt");
+				if (!File.Exists(appIdFile))
 				{
-					LogFile.WriteLine(AppIdFile + " does not exist, creating.");
-					File.WriteAllText(AppIdFile, AppId.ToString());
+					LogFile.WriteLine(appIdFile + " does not exist, creating.");
+					File.WriteAllText(appIdFile, AppId.ToString());
 				}
 
 				if (!Steamworks.SteamAPI.IsSteamRunning())
@@ -199,7 +206,7 @@ namespace avaness.SpaceEngineersLauncher
 			}
 
 			// Check for other SpaceEngineers.exe
-			string sePath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "SpaceEngineers.exe");
+			string sePath = Path.Combine(exeLocation, OriginalAssemblyFile);
 			if (Process.GetProcessesByName("SpaceEngineers").Any(x => x.MainModule.FileName.Equals(sePath, StringComparison.OrdinalIgnoreCase)))
 				return false;
 
@@ -209,13 +216,21 @@ namespace avaness.SpaceEngineersLauncher
         private static void EnsureAssemblyConfigFile()
         {
 			// Without this file, SE will have many bugs because its dependencies will not be correct.
-            if (!File.Exists(AssemblyConfigFile) && File.Exists(OriginalAssemblyConfig))
-			{
-                File.Copy(OriginalAssemblyConfig, AssemblyConfigFile);
-				Close();
-				Application.Restart();
-				Process.GetCurrentProcess().Kill();
+			string originalConfig = Path.Combine(exeLocation, OriginalAssemblyFile + ".config");
+			string newConfig = Path.Combine(exeLocation, Path.GetFileName(Assembly.GetExecutingAssembly().Location) + ".config");
+			if (File.Exists(originalConfig))
+            {
+				if (!File.Exists(newConfig) || !FilesEqual(originalConfig, newConfig))
+                {
+					File.Copy(originalConfig, newConfig, true);
+					Restart();
+				}
 			}
+			else if(File.Exists(newConfig))
+            {
+				File.Delete(newConfig);
+				Restart();
+            }
 		}
 
 		private static void Close()
@@ -322,7 +337,7 @@ namespace avaness.SpaceEngineersLauncher
 				{
 					foreach (ZipArchiveEntry entry in zipFile.Entries)
 					{
-						string fileName = Path.GetFileName(entry.FullName);
+						string fileName = Path.Combine(exeLocation, Path.GetFileName(entry.FullName));
 
 						using (Stream entryStream = entry.Open())
 						using (FileStream entryFile = File.Create(fileName))
@@ -394,5 +409,42 @@ namespace avaness.SpaceEngineersLauncher
                 return MessageBox.Show(Application.OpenForms[0], msg, "Space Engineers Launcher", buttons);
 			return MessageBox.Show(msg, "Space Engineers Launcher", buttons);
 		}
-    }
+
+		static void Restart()
+        {
+			Close();
+			Application.Restart();
+			Process.GetCurrentProcess().Kill();
+		}
+
+		static bool FilesEqual(string file1, string file2)
+        {
+			FileInfo fileInfo1 = new FileInfo(file1);
+			FileInfo fileInfo2 = new FileInfo(file2);
+			return fileInfo1.Length == fileInfo2.Length && GetHash256(file1) == GetHash256(file2);
+        }
+
+		static string GetHash256(string file)
+		{
+			using (SHA256CryptoServiceProvider sha = new SHA256CryptoServiceProvider())
+			{
+				return GetHash(file, sha);
+			}
+		}
+
+		static string GetHash(string file, HashAlgorithm hash)
+		{
+			using (FileStream fileStream = new FileStream(file, FileMode.Open))
+			{
+				using (BufferedStream bufferedStream = new BufferedStream(fileStream))
+				{
+					byte[] data = hash.ComputeHash(bufferedStream);
+					StringBuilder sb = new StringBuilder(2 * data.Length);
+					foreach (byte b in data)
+						sb.AppendFormat("{0:x2}", b);
+					return sb.ToString();
+				}
+			}
+		}
+	}
 }
