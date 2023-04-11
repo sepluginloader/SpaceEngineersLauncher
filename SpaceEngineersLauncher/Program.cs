@@ -337,10 +337,11 @@ namespace avaness.SpaceEngineersLauncher
 				{
 					foreach (ZipArchiveEntry entry in zipFile.Entries)
 					{
-						string fileName = Path.Combine(exeLocation, Path.GetFileName(entry.FullName));
+						string fileName = Path.GetFileName(entry.FullName);
+						string filePath = Path.Combine(exeLocation, fileName);
 
 						using (Stream entryStream = entry.Open())
-						using (FileStream entryFile = File.Create(fileName))
+						using (FileStream entryFile = File.Create(filePath))
 						{
 							entryStream.CopyTo(entryFile);
 						}
@@ -382,7 +383,7 @@ namespace avaness.SpaceEngineersLauncher
 
 		static bool CanUseLoader(ConfigFile config)
         {
-			if (!File.Exists(PluginLoaderFile))
+			if (!File.Exists(Path.Combine(exeLocation, PluginLoaderFile)))
             {
 				LogFile.WriteLine("WARNING: File verification failed, file does not exist: " + PluginLoaderFile);
 				return false;
@@ -392,7 +393,7 @@ namespace avaness.SpaceEngineersLauncher
 			{
 				foreach (string file in config.Files)
 				{
-					if (!File.Exists(file))
+					if (!File.Exists(Path.Combine(exeLocation, file)))
                     {
 						LogFile.WriteLine("WARNING: File verification failed, file does not exist: " + file);
 						return false;
