@@ -135,14 +135,17 @@ namespace avaness.SpaceEngineersLauncher
 						args[pluginFlag] = "";
 						for (int i = pluginFlag + 1; i < args.Length && !args[i].StartsWith("-"); i++)
 						{
-							if (File.Exists(args[i]))
+							string plugin = args[i];
+							if (plugin.EndsWith("PluginLoader.dll", StringComparison.OrdinalIgnoreCase))
+								continue;
+							if (File.Exists(plugin))
 							{
-								pluginLog.Append(args[i]).Append(',');
-								plugins.Add(args[i]);
+                                pluginLog.Append(plugin).Append(',');
+								plugins.Add(plugin);
 							}
 							else
 							{
-								LogFile.WriteLine("WARNING: '" + args[i] + "' does not exist.");
+								LogFile.WriteLine("WARNING: '" + plugin + "' does not exist.");
 							}
 						}
 					}
