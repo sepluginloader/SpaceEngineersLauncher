@@ -12,3 +12,7 @@ The launcher will download and keep Plugin Loader up to date automatically. If y
 	- You can find the Bin64 folder by right clicking on Space Engineers and selecting Properties. Then under the Local Files tab, select Browse and navigate to the Bin64 folder. 
 4. Launch Space Engineers by opening the SpaceEngineersLauncher.exe file. 
 5. *(optional)* To start Space Engineers with Plugin Loader via Steam, you must add it as a non-steam game using the `ADD A GAME` button at the bottom left of the Steam client.
+
+### Linux
+
+Linux users may need additional steps. See [opekope2's solution](https://gist.github.com/opekope2/e02db7e526dadff0813a6ea2aebf820b).
