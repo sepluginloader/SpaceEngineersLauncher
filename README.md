@@ -15,3 +15,8 @@ The launcher will download and keep Plugin Loader up to date automatically. If y
 ### Linux
 
 Linux users may need additional steps. See [opekope2's solution](https://gist.github.com/opekope2/e02db7e526dadff0813a6ea2aebf820b).
+
+## Troubleshooting
+**I get a message that says "We have detected a better graphics card" or I have another graphics related issue**
+
+If you have an integrated GPU as well as a dedicated GPU, try going into Windows settings > Display > Graphics and setting SpaceEngineersLauncher.exe to High performance.
