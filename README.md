@@ -1,6 +1,6 @@
 # Space Engineers Launcher
 
-A launcher for Space Engineers with built in Plugin Loader.
+A launcher for Space Engineers with built in [Plugin Loader](https://github.com/sepluginloader/PluginLoader).
 
 The launcher will download and keep Plugin Loader up to date automatically. If you want to use this launcher without Plugin Loader, you can open the configuration file in the `Bin64/Plugins/` folder and change the `NoUpdates` value to true.
 
@@ -11,6 +11,11 @@ The launcher will download and keep Plugin Loader up to date automatically. If y
 3. The exe file can now be placed in the game Bin64 folder.
 	- You can find the Bin64 folder by right clicking on Space Engineers and selecting Properties. Then under the Local Files tab, select Browse and navigate to the Bin64 folder. 
 4. Launch Space Engineers by opening the SpaceEngineersLauncher.exe file. 
+
+### Community Videos
+Check out this tutorial video by Vortex Mods on how to install Plugin Loader with the Nexus Seamless plugin:
+
+[https://www.youtube.com/watch?v=ywBYoDZHG-4](https://www.youtube.com/watch?v=ywBYoDZHG-4)
 
 ### Linux
 
