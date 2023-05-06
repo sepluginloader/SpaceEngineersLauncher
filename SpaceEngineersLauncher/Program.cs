@@ -27,7 +27,8 @@ namespace avaness.SpaceEngineersLauncher
 		private const string OriginalAssemblyFile = "SpaceEngineers.exe";
 		private const string ProgramGuid = "03f85883-4990-4d47-968e-5e4fc5d72437";
 		private static readonly Version SupportedGameVersion = new Version(1, 202, 0);
-		private const int MutexTimeout = 1000;
+		private const int MutexTimeout = 1000; // ms
+		private const int SteamTimeout = 30; // seconds
 
 		private static string exeLocation;
 		private static SplashScreen splash;
@@ -101,13 +102,7 @@ namespace avaness.SpaceEngineersLauncher
 					File.WriteAllText(appIdFile, AppId.ToString());
 				}
 
-				if (!Steamworks.SteamAPI.IsSteamRunning())
-				{
-					LogFile.WriteLine("Steam not detected!");
-					Show("Steam must be running before you can start Space Engineers.");
-					splash.Delete();
-					Environment.Exit(0);
-				}
+				StartSteam();
 
 				EnsureAssemblyConfigFile();
 
@@ -116,6 +111,8 @@ namespace avaness.SpaceEngineersLauncher
 
 				StringBuilder pluginLog = new StringBuilder("Loading plugins: ");
 				List<string> plugins = new List<string>();
+
+				splash.SetText("Registering plugins...");
 
 				if (CanUseLoader(config))
 				{
@@ -151,8 +148,6 @@ namespace avaness.SpaceEngineersLauncher
 					}
 				}
 
-				splash.SetText("Registering plugins...");
-
 				if (plugins.Count > 0)
 				{
 					if (pluginLog.Length > 0)
@@ -173,6 +168,34 @@ namespace avaness.SpaceEngineersLauncher
 			}
 
 			MyCommonProgramStartup.BeforeSplashScreenInit += Close;
+		}
+
+        private static void StartSteam()
+		{
+			if(!Steamworks.SteamAPI.IsSteamRunning())
+			{
+				splash.SetText("Starting steam...");
+				try
+				{
+					Process steam = Process.Start("steam://");
+					if(steam != null)
+                    {
+						for (int i = 0; i < SteamTimeout; i++)
+						{
+							Thread.Sleep(1000);
+							if (Steamworks.SteamAPI.Init())
+								return;
+						}
+					}
+				}
+				catch { }
+
+				LogFile.WriteLine("Steam not detected!");
+				Show("Steam must be running before you can start Space Engineers.");
+				splash.Delete();
+				Environment.Exit(0);
+			}
+
 		}
 
 		[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
