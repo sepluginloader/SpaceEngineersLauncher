@@ -22,6 +22,6 @@ Check out this tutorial video by Vortex Mods on how to install Plugin Loader wit
 Linux users may need additional steps. See [opekope2's solution](https://gist.github.com/opekope2/e02db7e526dadff0813a6ea2aebf820b).
 
 ## Troubleshooting
-**I get a message that says "We have detected a better graphics card" or I have another graphics related issue**
+**I get a message that says "We have detected a better graphics card", "Please apply windows updates and update to latest graphics drivers", or I have another graphics related issue**
 
-If you have an integrated GPU as well as a dedicated GPU, try going into Windows settings > Display > Graphics and setting SpaceEngineersLauncher.exe to High performance.
+Try going into Windows settings > Display > Graphics and setting SpaceEngineersLauncher.exe to High performance.
