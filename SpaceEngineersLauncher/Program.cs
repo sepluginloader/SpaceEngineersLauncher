@@ -167,7 +167,10 @@ namespace avaness.SpaceEngineersLauncher
                     Application.OpenForms[0].Close();
 			}
 
-			MyCommonProgramStartup.BeforeSplashScreenInit += Close;
+			if (args != null && Array.IndexOf(args, "-nosplash") >= 0)
+				Close();
+			else
+				MyCommonProgramStartup.BeforeSplashScreenInit += Close;
 		}
 
         private static void StartSteam()
