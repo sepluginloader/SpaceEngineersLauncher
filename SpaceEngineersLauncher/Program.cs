@@ -72,7 +72,9 @@ namespace avaness.SpaceEngineersLauncher
 
 		private static void StartPluginLoader(string[] args)
         {
-			splash = new SplashScreen("avaness.SpaceEngineersLauncher");
+			bool nosplash = args != null && Array.IndexOf(args, "-nosplash") >= 0;
+			if (!nosplash)
+				splash = new SplashScreen("avaness.SpaceEngineersLauncher");
 
 			try
 			{
@@ -112,7 +114,7 @@ namespace avaness.SpaceEngineersLauncher
 				StringBuilder pluginLog = new StringBuilder("Loading plugins: ");
 				List<string> plugins = new List<string>();
 
-				splash.SetText("Registering plugins...");
+				splash?.SetText("Registering plugins...");
 
 				if (CanUseLoader(config))
 				{
@@ -157,7 +159,7 @@ namespace avaness.SpaceEngineersLauncher
 					MyPlugins.RegisterUserAssemblyFiles(plugins);
 				}
 
-				splash.SetText("Starting game...");
+				splash?.SetText("Starting game...");
 			}
 			catch (Exception e)
 			{
@@ -167,7 +169,7 @@ namespace avaness.SpaceEngineersLauncher
                     Application.OpenForms[0].Close();
 			}
 
-			if (args != null && Array.IndexOf(args, "-nosplash") >= 0)
+			if (nosplash)
 				Close();
 			else
 				MyCommonProgramStartup.BeforeSplashScreenInit += Close;
@@ -177,7 +179,7 @@ namespace avaness.SpaceEngineersLauncher
 		{
 			if(!Steamworks.SteamAPI.IsSteamRunning())
 			{
-				splash.SetText("Starting steam...");
+				splash?.SetText("Starting steam...");
 				try
 				{
 					Process steam = Process.Start("steam://");
@@ -195,7 +197,7 @@ namespace avaness.SpaceEngineersLauncher
 
 				LogFile.WriteLine("Steam not detected!");
 				Show("Steam must be running before you can start Space Engineers.");
-				splash.Delete();
+				splash?.Delete();
 				Environment.Exit(0);
 			}
 
@@ -278,7 +280,7 @@ namespace avaness.SpaceEngineersLauncher
 
 		static void Update(ConfigFile config)
         {
-			splash.SetText("Checking for updates...");
+			splash?.SetText("Checking for updates...");
 
 
 			string currentVersion = null;
@@ -313,13 +315,13 @@ namespace avaness.SpaceEngineersLauncher
 				DialogResult result = Show(prompt.ToString(), MessageBoxButtons.YesNoCancel);
 				if (result == DialogResult.Yes)
 				{
-					splash.SetText("Downloading update...");
+					splash?.SetText("Downloading update...");
 					if (!TryDownloadUpdate(config, latestVersion))
 						Show("Update failed!");
 				}
 				else if (result == DialogResult.Cancel)
 				{
-					splash.Delete();
+					splash?.Delete();
 					Environment.Exit(0);
 				}
 			}
