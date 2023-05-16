@@ -139,7 +139,7 @@ namespace avaness.SpaceEngineersLauncher
 							if (plugin.EndsWith("PluginLoader.dll", StringComparison.OrdinalIgnoreCase))
 								continue;
 							if (!Path.IsPathRooted(plugin))
-								plugin = Path.Combine(exeLocation, plugin);
+								plugin = Path.GetFullPath(Path.Combine(exeLocation, plugin));
 							if (File.Exists(plugin))
 							{
                                 pluginLog.Append(plugin).Append(',');
