@@ -118,8 +118,9 @@ namespace avaness.SpaceEngineersLauncher
 
 				if (CanUseLoader(config))
 				{
-					pluginLog.Append(PluginLoaderFile).Append(',');
-					plugins.Add(PluginLoaderFile);
+					string loaderDll = Path.Combine(exeLocation, PluginLoaderFile);
+					pluginLog.Append(loaderDll).Append(',');
+					plugins.Add(loaderDll);
 				}
 				else
 				{
@@ -137,6 +138,8 @@ namespace avaness.SpaceEngineersLauncher
 							string plugin = args[i];
 							if (plugin.EndsWith("PluginLoader.dll", StringComparison.OrdinalIgnoreCase))
 								continue;
+							if (!Path.IsPathRooted(plugin))
+								plugin = Path.Combine(exeLocation, plugin);
 							if (File.Exists(plugin))
 							{
                                 pluginLog.Append(plugin).Append(',');
