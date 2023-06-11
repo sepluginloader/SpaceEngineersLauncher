@@ -13,8 +13,12 @@ The launcher will download and keep Plugin Loader up to date automatically. If y
 4. Launch Space Engineers by opening the SpaceEngineersLauncher.exe file. 
 
 ### Community Videos
-Check out this tutorial video by Vortex Mods on how to install Plugin Loader with the Nexus Seamless plugin:
+Tutorial videos from the community: 
 
+AliceDoesThings\
+[https://www.youtube.com/watch?v=76pIEdxnfDg](https://www.youtube.com/watch?v=76pIEdxnfDg)
+
+Vortex Mods\
 [https://www.youtube.com/watch?v=ywBYoDZHG-4](https://www.youtube.com/watch?v=ywBYoDZHG-4)
 
 ### Linux
