@@ -191,7 +191,12 @@ namespace avaness.SpaceEngineersLauncher
 				splash?.SetText("Starting steam...");
 				try
 				{
-					Process steam = Process.Start("steam://");
+					Process steam = Process.Start(
+						new ProcessStartInfo("cmd", "/c start steam://")
+						{
+							UseShellExecute = true,
+							WindowStyle = ProcessWindowStyle.Hidden,
+						});
 					if(steam != null)
                     {
 						for (int i = 0; i < SteamTimeout; i++)
