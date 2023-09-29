@@ -33,7 +33,6 @@ namespace avaness.SpaceEngineersLauncher
 
 			Size = new Size((int)(originalSplashSize.Width * originalSplashScale.X), (int)(originalSplashSize.Height * originalSplashScale.Y));
 			Name = "SplashScreenPluginLoaderLauncher";
-			TopMost = true;
 			FormBorderStyle = FormBorderStyle.None;
 
 			SizeF barSize = new SizeF(Size.Width * barWidth, Size.Height * barHeight);
